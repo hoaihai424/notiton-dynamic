@@ -1,16 +1,10 @@
 {
     "properties": {
         "name": {
-            "title": [
-                {
-                    "text": {
-                        "content": "hoaihai"
-                    }
-                }
-            ]
+            "title": {}
         },
         "age": {
-            "number": 20
+            "number": {}
         }
     }
 }
