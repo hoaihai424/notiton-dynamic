@@ -165,7 +165,28 @@ def get_customer_data(customer_ID : str):
     return None
 
 #update
+def changeID(new_name: str, dbID: str):
+    payload = {
+        "title": [
+            {
+                "type": "text",
+                "text": {
+                    "content": new_name
+                }
+            }
+        ]
+    }
 
+    url = f"https://api.notion.com/v1/pages/{dbID}"
+    response = requests.patch(url, headers=headers, json=payload)
+
+    return response.json()
+
+def update_customer_db(id : str, data: dict):
+    url = f"https://api.notion.com/v1/pages/{id}"
+    response = requests.patch(url, headers=headers, data=json.dumps(data))
+
+    return response.json()
 
 #delete
 

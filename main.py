@@ -43,6 +43,22 @@ async def add_data(customer_id: str, data: dict):
 
 #update
 @app.put("/customers/{customer_id}")
+async def rename_customer(customer_id: str, new_customer_id: str):
+    db = read_db()
+
+    if db == None:
+        raise HTTPException(status_code=404, detail="Database not found")
+    else:
+        for i in range(len(db)):
+            if db[i]["child_database"]["title"] == customer_id:
+                res = changeID(new_customer_id, db[i]["child_database"]["id"])
+                if res.status_code == 400:
+                    raise HTTPException(status_code=404, detail="Failed to rename customer")
+                return {"message": "Customer renamed successfully"}
+
+        raise HTTPException(status_code=404, detail="Customer not found")
+
+@app.put("/customers/{customer_id}")
 async def update_customer(customer_id: int):
     pass
 
