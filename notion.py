@@ -91,7 +91,7 @@ def create_customer(id:str, data: dict):
 
     return response.json()
 
-#read
+#retrieve
 def read_db():
     url = f"https://api.notion.com/v1/blocks/{PAGE_ID}/children"
     response = requests.get(url, headers=headers)
@@ -113,19 +113,19 @@ def display_db():
     res = read_db()
     if res == None:
         return None
+    
+    list_of_data = []
 
     for i in range(len(res)):
-        print(res[i]["child_database"]["title"])
+        list_of_data.append(res[i]["child_database"]["title"])
 
-def display_customer_data(dbID : str):
+    return list_of_data
+
+def get_data(dbID : str):
     url = f"https://api.notion.com/v1/databases/{dbID}/query"
     response = requests.post(url, headers=headers, json={"page_size": 100})
 
     data = response.json()
-
-    with open("output.json", "w") as f:
-        json.dump(data, f, indent=4)
-
     result = data["results"]
 
     if result == []: 
@@ -136,33 +136,38 @@ def display_customer_data(dbID : str):
         response = requests.post(next_url, headers=headers)
         data = response.json()  
         result += data["results"]
+    
+    return result
+
+def display_customer_data(dbID : str):
+    result = get_data(dbID)
+    list_of_data = {}
+    idx = 0
 
     for x in result:
+        list_of_data.update({idx: {}})
         for y in x["properties"]:
             if x["properties"][y]["type"] == "title":
-                print(x["properties"][y]["title"][0]["text"]["content"], end=", ")
+                list_of_data[idx].update({y: x["properties"][y]["title"][0]["text"]["content"]})
             elif x["properties"][y]["type"] == "number":
-                print(x["properties"][y]["number"], end=", ")
+                list_of_data[idx].update({y: x["properties"][y]["number"]})
             elif x["properties"][y]["type"] == "rich_text":
-                print(x["properties"][y]["rich_text"][0]["text"]["content"], end=", ")
+                list_of_data[idx].update({y: x["properties"][y]["rich_text"][0]["text"]["content"]})
             elif x["properties"][y]["type"] == "date":
-                print(x["properties"][y]["date"]["start"], end=", ")
+                list_of_data[idx].update({y: x["properties"][y]["date"]["start"]})
             elif x["properties"][y]["type"] == "url":
-                print(x["properties"][y]["url"], end=", ")
-        print()
+                list_of_data[idx].update({y: x["properties"][y]["url"]})
+        idx += 1
 
-    
+    return list_of_data
 
 def get_customer_data(customer_ID : str):
     res = read_db()
-    if res == None:
-        return None
-    
     for i in range(len(res)):
         if res[i]["child_database"]["title"] == customer_ID:
             return display_customer_data(res[i]["id"])
     
-    return None
+    return "No such customer"
 
 #update
 def changeID(new_name: str, dbID: str):
@@ -177,16 +182,64 @@ def changeID(new_name: str, dbID: str):
         ]
     }
 
-    url = f"https://api.notion.com/v1/pages/{dbID}"
+    url = f"https://api.notion.com/v1/databases/{dbID}"
     response = requests.patch(url, headers=headers, json=payload)
 
     return response.json()
 
-def update_customer_db(id : str, data: dict):
-    url = f"https://api.notion.com/v1/pages/{id}"
-    response = requests.patch(url, headers=headers, data=json.dumps(data))
+def get_key_field(data: dict):
+    for x in data.keys():
+        if data[x]["type"] == "title":
+            return x
+        
+    return None
+
+def update_customer_db(id : str, data: dict, data_id : str):
+    key_field = get_key_field(data)
+    res = get_data(id)
+
+    for x in res:
+        if x["properties"][key_field]["title"][0]["text"]["content"] == data_id:
+            payload = data_conversion_4_adding_row(data)
+            pageid = x["id"]
+            url = f"https://api.notion.com/v1/pages/{pageid}"
+            response = requests.patch(url, headers=headers, json=payload)
+
+            return response.json()
+
+#delete
+def delete_customer_db(id : str):
+    url = f"https://api.notion.com/v1/databases/{id}"
+    response = requests.patch(url, headers=headers, json={"archived": True})
 
     return response.json()
 
-#delete
+def delete_data(customer_id: str, row_id: str):
+    tmp = get_data(customer_id)
 
+    if not tmp:
+        return {"message": "No data found"}
+
+    key_field = ""
+
+    for x in tmp[0]["properties"]:
+        if tmp[0]["properties"][x]["type"] == "title":
+            key_field = x
+            break
+
+    pageID = None
+    for x in tmp:
+        if x["properties"][key_field]["title"][0]["text"]["content"] == row_id:
+            pageID = x["id"]
+            break
+
+    if not pageID:
+        return {"message": "Row ID not found"}
+
+    url = f"https://api.notion.com/v1/pages/{pageID}"
+    response = requests.patch(url, headers=headers, json={"archived": True})
+
+    if response.status_code == 200:
+        return {"message": "Data deleted successfully"}
+    else:
+        return {"message": "Failed to delete data", "details": response.json()}
