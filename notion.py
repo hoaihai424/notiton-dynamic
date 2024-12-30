@@ -105,6 +105,9 @@ def read_db():
         data = response.json()  
         result += data["results"]
 
+    with open("data.json", "w") as f:
+        json.dump(result, f, indent=4)
+
     if result == []: 
         return None
     return result
@@ -117,7 +120,10 @@ def display_db():
     list_of_data = []
 
     for i in range(len(res)):
-        list_of_data.append(res[i]["child_database"]["title"])
+        try:
+            list_of_data.append(res[i]["child_database"]["title"])
+        except KeyError:
+            continue
 
     return list_of_data
 
@@ -147,16 +153,19 @@ def display_customer_data(dbID : str):
     for x in result:
         list_of_data.update({idx: {}})
         for y in x["properties"]:
-            if x["properties"][y]["type"] == "title":
-                list_of_data[idx].update({y: x["properties"][y]["title"][0]["text"]["content"]})
-            elif x["properties"][y]["type"] == "number":
-                list_of_data[idx].update({y: x["properties"][y]["number"]})
-            elif x["properties"][y]["type"] == "rich_text":
-                list_of_data[idx].update({y: x["properties"][y]["rich_text"][0]["text"]["content"]})
-            elif x["properties"][y]["type"] == "date":
-                list_of_data[idx].update({y: x["properties"][y]["date"]["start"]})
-            elif x["properties"][y]["type"] == "url":
-                list_of_data[idx].update({y: x["properties"][y]["url"]})
+            try: 
+                if x["properties"][y]["type"] == "title":
+                    list_of_data[idx].update({y: x["properties"][y]["title"][0]["text"]["content"]})
+                elif x["properties"][y]["type"] == "number":
+                    list_of_data[idx].update({y: x["properties"][y]["number"]})
+                elif x["properties"][y]["type"] == "rich_text":
+                    list_of_data[idx].update({y: x["properties"][y]["rich_text"][0]["text"]["content"]})
+                elif x["properties"][y]["type"] == "date":
+                    list_of_data[idx].update({y: x["properties"][y]["date"]["start"]})
+                elif x["properties"][y]["type"] == "url":
+                    list_of_data[idx].update({y: x["properties"][y]["url"]})
+            except IndexError:
+                list_of_data[idx].update({y: None})
         idx += 1
 
     return list_of_data
@@ -198,14 +207,17 @@ def update_customer_db(id : str, data: dict, data_id : str):
     key_field = get_key_field(data)
     res = get_data(id)
 
-    for x in res:
-        if x["properties"][key_field]["title"][0]["text"]["content"] == data_id:
-            payload = data_conversion_4_adding_row(data)
-            pageid = x["id"]
-            url = f"https://api.notion.com/v1/pages/{pageid}"
-            response = requests.patch(url, headers=headers, json=payload)
+    try:
+        for x in res:
+            if x["properties"][key_field]["title"][0]["text"]["content"] == data_id:
+                payload = data_conversion_4_adding_row(data)
+                pageid = x["id"]
+                url = f"https://api.notion.com/v1/pages/{pageid}"
+                response = requests.patch(url, headers=headers, json=payload)
 
-            return response.json()
+                return response.json()
+    except KeyError:
+        return {"message": "Data not found"}
 
 #delete
 def delete_customer_db(id : str):

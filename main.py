@@ -32,8 +32,11 @@ async def create_customer(customer_id: str, data: dict | None = None):
         return {"message": "Customer created successfully"}
     else:
         for i in range(len(db)):
-            if db[i]["child_database"]["title"] == customer_id:
-                raise HTTPException(status_code=404, detail="Customer already exists")
+            try:
+                if db[i]["child_database"]["title"] == customer_id:
+                    raise HTTPException(status_code=404, detail="Customer already exists")
+            except KeyError:
+                continue
         nt.create_customer(customer_id, data)
         return {"message": "Customer created successfully"}
 
@@ -45,9 +48,12 @@ async def add_data(customer_id: str, data: dict):
         raise HTTPException(status_code=404, detail="Database not found")
     else:
         for i in range(len(db)):
-            if db[i]["child_database"]["title"] == customer_id:
-                nt.add_data(db[i]["id"], data)
-                return {"message": "Data added successfully"}
+            try: 
+                if db[i]["child_database"]["title"] == customer_id:
+                    nt.add_data(db[i]["id"], data)
+                    return {"message": "Data added successfully"}
+            except KeyError:
+                continue
         raise HTTPException(status_code=404, detail="Customer not found")
     
 #update
@@ -59,11 +65,14 @@ async def rename_customer(customer_id: str, new_customer_id: str):
         raise HTTPException(status_code=404, detail="Database not found")
     else:
         for i in range(len(db)):
-            if db[i]["child_database"]["title"] == customer_id:
-                success = nt.changeID(new_customer_id, db[i]["id"])
-                if not success:
-                    raise HTTPException(status_code=400, detail="Failed to rename customer")
-                return {"message": "Customer renamed successfully"}
+            try:
+                if db[i]["child_database"]["title"] == customer_id:
+                    success = nt.changeID(new_customer_id, db[i]["id"])
+                    if not success:
+                        raise HTTPException(status_code=400, detail="Failed to rename customer")
+                    return {"message": "Customer renamed successfully"}
+            except KeyError:
+                continue
 
         raise HTTPException(status_code=404, detail="Customer not found")
 
@@ -75,11 +84,14 @@ async def update_customer(customer_id: str, data: dict, data_id: str):
         raise HTTPException(status_code=404, detail="Database not found")
     else:
         for i in range(len(db)):
-            if db[i]["child_database"]["title"] == customer_id:
-                tmp = nt.update_customer_db(db[i]["id"], data, data_id)
-                if not tmp:
-                    raise HTTPException(status_code=400, detail="Failed to update data")
-                return {"message": "Data updated successfully"}
+            try:
+                if db[i]["child_database"]["title"] == customer_id:
+                    tmp = nt.update_customer_db(db[i]["id"], data, data_id)
+                    if not tmp:
+                        raise HTTPException(status_code=400, detail="Failed to update data")
+                    return {"message": "Data updated successfully"}
+            except KeyError:
+                continue
         raise HTTPException(status_code=404, detail="Customer not found")
     
 
@@ -91,9 +103,12 @@ async def delete_customer(customer_id: str):
         raise HTTPException(status_code=404, detail="Database not found")
     else:
         for i in range(len(db)):
-            if db[i]["child_database"]["title"] == customer_id:
-                tmp = nt.delete_customer_db(db[i]["id"])
-                return {"message": "Customer deleted successfully"}
+            try:
+                if db[i]["child_database"]["title"] == customer_id:
+                    tmp = nt.delete_customer_db(db[i]["id"])
+                    return {"message": "Customer deleted successfully"}
+            except KeyError:
+                continue
         raise HTTPException(status_code=404, detail="Customer not found")
 
 @app.delete("/customers/{customer_id}/data", tags=["delete"])
@@ -104,9 +119,12 @@ async def delete_data(customer_id: str, data_id: str):
         raise HTTPException(status_code=404, detail="Database not found")
     else:
         for i in range(len(db)):
-            if db[i]["child_database"]["title"] == customer_id:
-                result = nt.delete_data(db[i]["id"], data_id)
-                if result["message"] != "Data deleted successfully":
-                    raise HTTPException(status_code=400, detail=result["message"])
-                return result
+            try: 
+                if db[i]["child_database"]["title"] == customer_id:
+                    result = nt.delete_data(db[i]["id"], data_id)
+                    if result["message"] != "Data deleted successfully":
+                        raise HTTPException(status_code=400, detail=result["message"])
+                    return result
+            except KeyError:
+                continue
         raise HTTPException(status_code=404, detail="Customer not found") 
