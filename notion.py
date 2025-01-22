@@ -1,15 +1,19 @@
 import requests
 import json
 import pandas as pd
+import os
+from dotenv import load_dotenv
 
-NOTION_API_KEY = "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"
+load_dotenv()
+
+NOTION_API_KEY = os.getenv("NOTION_API_KEY")
 NOTION_URL = "https://api.notion.com/v1/pages"
 PAGE_ID = "15b2ec8473e98007885fe7ec343ff6df"
 
 headers = {
     "Authorization": "Bearer " + NOTION_API_KEY,
-    "Content-Type": "application/json", 
-    "Notion-Version": "2022-06-28", 
+    "Content-Type": "application/json",
+    "Notion-Version": "2022-06-28",
 }
 
 #create

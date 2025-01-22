@@ -1,0 +1,11 @@
+# Ignore all files
+*
+
+# Except for this .gitignore file
+!.gitignore
+
+# Allow environment variable files
+!.env
+
+# Ignore virtual environment directories
+venv/
